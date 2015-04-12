@@ -1,0 +1,2 @@
+
+dev_mount external_SD /storage/external_SD auto /devices/platform/msm_sdcc.1/mmc_host
