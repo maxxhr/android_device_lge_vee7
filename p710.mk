@@ -55,8 +55,12 @@ PRODUCT_PACKAGES += \
 # Other modules
 PRODUCT_PACKAGES += \
     gps.msm7x27a \
-    lights.msm7x27a \
-    camera.msm7x27a
+    lights.msm7x27a 
+
+# off-mode charging
+PRODUCT_PACKAGES += \
+    charger \
+    charger_res_images
     
 # Other Packages
 PRODUCT_PACKAGES += \

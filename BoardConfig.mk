@@ -18,11 +18,14 @@ TARGET_BOOTLOADER_BOARD_NAME					:= p710
 
 TARGET_ARCH 									:= arm
 TARGET_ARCH_VARIANT 							:= armv7-a-neon
-TARGET_CPU_VARIANT 								:= cortex-a9
+
+TARGET_CPU_VARIANT 								:= cortex-a5
 					
 TARGET_CPU_ABI 									:= armeabi-v7a
 TARGET_CPU_ABI2 								:= armeabi
 
+TARGET_GLOBAL_CFLAGS 							+= -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a5
+TARGET_GLOBAL_CPPFLAGS 							+= -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a5
 
 # Optimizations
 TARGET_CPU_SMP 									:= true
@@ -36,17 +39,15 @@ TARGET_USE_SPARROW_BIONIC_OPTIMIZATION 			:= true
 
 ARCH_ARM_HIGH_OPTIMIZATION 						:= true
 ARCH_ARM_HIGH_OPTIMIZATION_COMPAT 				:= true
-
-TARGET_GLOBAL_CFLAGS 							+= -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a9
-TARGET_GLOBAL_CPPFLAGS 							+= -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a9
-
+	
 # Kernel
 BOARD_KERNEL_BASE 								:= 0x00200000
-BOARD_KERNEL_CMDLINE 							:= androidboot.hardware=P710N lge.signed_image=false
+BOARD_KERNEL_CMDLINE 							:= androidboot.hardware=Nvee7 msm_cpr.enable=0 androidboot.selinux=permissive no_console_suspend=1
+
 BOARD_MKBOOTIMG_ARGS 							:= --ramdisk_offset 0x01200000
 BOARD_PAGE_SIZE 								:= 4096
 TARGET_KERNEL_SOURCE 							:= kernel/lge/p710
-TARGET_KERNEL_CONFIG 							:= cyanogenmod_p710_defconfig
+TARGET_KERNEL_CONFIG 							:= cyanogenmod_10.2_vee7_defconfig
 
 # Graphics
 TARGET_QCOM_DISPLAY_VARIANT 					:= legacy
@@ -57,11 +58,13 @@ BOARD_ADRENO_DECIDE_TEXTURE_TARGET 				:= true
 # Qualcomm hardware
 BOARD_USES_QCOM_HARDWARE 						:= true
 COMMON_GLOBAL_CFLAGS 							+= -DQCOM_HARDWARE -DQCOM_BSP
+COMMON_GLOBAL_CFLAGS 							+= -DREFRESH_RATE=60
 BOARD_USES_QCOM_LIBS 							:= true
 TARGET_USES_ION 								:= true
 TARGET_USES_QCOM_BSP 							:= true
+TARGET_GRALLOC_USES_ASHMEM 						:= true
+BOARD_EGL_NEEDS_LEGACY_FB						:= true
 
-BOARD_WANTS_EMMC_BOOT 							:= true
 
 # GPS
 BOARD_USES_QCOM_LIBRPC 							:= true
