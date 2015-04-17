@@ -24,18 +24,50 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-import init.vee7.usb.rc
-import init.target.rc
 
+import /init.target.rc
+import /init.Nvee7.usb.rc
 #LGE_CHANGE_S [satya.kamasali@lge.com] 20121008:MPT Partition
+
+on early-init
+
+   mount debugfs debugfs /sys/kernel/debug
+   chmod 666 /proc/cmdline
+
 on init
-   exec /sbin/setup_fs \
+
+#Handle Internal + External Storage
+
+    # See storage config details at http://source.android.com/tech/storage/
+    mkdir /mnt/shell/emulated 0700 shell shell
+    mkdir /storage/emulated 0555 root root
+    mkdir /storage/emulated/legacy 0555 root root
+    mkdir /storage/sdcard1 0775 system system
+
+    export EXTERNAL_STORAGE /storage/emulated/legacy
+    export SECONDARY_STORAGE /storage/sdcard1
+    export EMULATED_STORAGE_SOURCE /mnt/shell/emulated
+    export EMULATED_STORAGE_TARGET /storage/emulated
+
+     # Support legacy paths
+    symlink /storage/emulated/legacy /sdcard
+    symlink /storage/emulated/legacy /mnt/sdcard
+    symlink /storage/emulated/legacy /storage/sdcard0
+    symlink /storage/sdcard1         /external_sd
+    symlink /storage/sdcard1         /mnt/external_sd
+ 
+on fs
+
+	mkdir /cust 0771 system system
+
+    exec /sbin/setup_fs \
     /dev/block/platform/msm_sdcc.3/by-num/p20 \
 	/dev/block/platform/msm_sdcc.3/by-num/p16 \
 	/dev/block/platform/msm_sdcc.3/by-num/p23 \
 	/dev/block/platform/msm_sdcc.3/by-num/p18 \
 	/dev/block/platform/msm_sdcc.3/by-num/p25 \
 	no_reboot
+	
     # Set permissions for persist partition
     mkdir /persist 0771 system system
     mkdir /mpt 0771 system system
@@ -46,15 +78,6 @@ on init
     mkdir /data/misc/bluetooth 0770 bluetooth bluetooth
     mkdir /data/misc/bluetoothd 0770 bluetooth bluetooth    #moved from init.rc - jeonghoon.lim@lge.com
 #+e LGBT_COMMON_FUNCTION_BRINGUP
-
-    mkdir /mnt 0775 root system
-    mkdir /mnt/sdcard 0000 system system
-
-# Backwards Compat - XXX: Going away in G*
-    symlink /mnt/sdcard /sdcard
-# LGE_CHANGE_E [kh.tak@lge.com] 20120921
-
-	mkdir /cust 0771 system system
 
 on early-boot
     # set RLIMIT_MEMLOCK to 64MB
@@ -68,18 +91,6 @@ on early-boot
 # LGE_CHANGE_S [khyun.kim@lge.com] 20121121 : increasing number of last_kmsg in dontpanic
     exec /system/bin/sh /system/etc/last_kmsg_backup.sh
 # LGE_CHANGE_E [khyun.kim@lge.com] 20121121
- 
-on early-init
-    # for backwards compatibility
-    export EXTERNAL_STORAGE /storage/sdcard0
-#    mkdir /storage 0050 system sdcard_r
-    mkdir /storage 0775 system sdcard_r
-    mkdir /storage/sdcard0 0000 system system
-    symlink /storage/sdcard0 /sdcard
-    symlink /storage/sdcard0 /mnt/sdcard
-# LGE_CHANGE_S [kh.tak@lge.com] 20120921 : support Internal SD and External SD
-    mkdir /storage/external_SD 0000 system system
-# LGE_CHANGE_E [kh.tak@lge.com] 20120921
 
 on boot
     exec system/bin/btnvtool -O
@@ -249,6 +260,8 @@ on post-fs-data
     chmod 0600 /dev/pn544
     chown nfc nfc /dev/pn544
     setprop ro.nfc.port I2C
+    mkdir /data/nfc 770 nfc nfc
+    mkdir /data/nfc/param 770 nfc nfc
     
 # Read ahead
     write /sys/block/mmcblk0/queue/read_ahead_kb 1024
@@ -364,10 +377,7 @@ on post-fs-data
     chmod 0660 /sys/devices/platform/i2c-gpio.5/i2c-5/5-0039/pdata
 #[LGSI_SP4_BSP_END][kirankumar.vm@lge.com] PROXIMITY_SENSOR
 
-/* LGE_CHANGE_S : 2013-02-20 sungmin.cho@lge.com for setting antibanding in runtime */
    chown media media /sys/devices/i2c-0/0-0060/antibanding
-/* LGE_CHANGE_E : 2013-02-20 sungmin.cho@lge.com for setting antibanding in runtime */
-
 
     # Log Service [START]
     mkdir /data/logger 0771 system system
@@ -395,15 +405,6 @@ service sensord /system/bin/sensord
 on property:init.svc.surfaceflinger=stopped
     stop ppd
     stop hdmid
-
-on property:bluetooth.isEnabled=true
-    start btwlancoex
-    write /sys/class/bluetooth/hci0/idle_timeout 7000
-
-service qcom-c_core-sh /system/bin/sh /init.qcom.class_core.sh
-    class core
-    user root
-    oneshot
 
 service qcom-c_main-sh /system/bin/sh /init.qcom.class_main.sh
     class main
@@ -459,6 +460,14 @@ service bridgemgrd /system/bin/bridgemgrd
     user radio
     group radio qcom_diag
     disabled
+    
+service sdcard /system/bin/sdcard /data/media /mnt/shell/emulated 1023 1023
+    class late_start
+    
+# Binding fuse mount point to /storage/emulated/legacy
+on property:init.svc.sdcard=running
+    wait /mnt/shell/emulated/0
+    mount none /mnt/shell/emulated/0 /storage/emulated/legacy bind    
 
 # [LGE_CHANGE][narasimha.chikka@lge.com], usb diag interface
 #service port-bridge /system/bin/port-bridge /dev/smd0 /dev/ttyGS0
@@ -474,18 +483,17 @@ service qmiproxy /system/bin/qmiproxy
     class main
     user radio
     group radio qcom_diag
-    disabled
+# 	disabled
 
 # QMUX must be in multiple groups to support external process connections
 service qmuxd /system/bin/qmuxd
     class main
     user radio
     group radio audio bluetooth gps qcom_diag
-    disabled
+#   disabled
 
 service netmgrd /system/bin/netmgrd
     class main
-    disabled
 
 # Adjust socket buffer to enlarge TCP receive window for high bandwidth
 # but only if ro.data.large_tcp_window_size property is set.
@@ -558,26 +566,6 @@ service fm_dl /system/bin/sh /system/etc/init.qcom.fm.sh
     disabled
     oneshot
 
-on property:crypto.driver.load=1
-     insmod /system/lib/modules/qce.ko
-     insmod /system/lib/modules/qcedev.ko
-
-on property:crypto.driver.load=0
-     exec /system/bin/rmmod qcedev.ko
-     exec /system/bin/rmmod qce.ko
-
-service drmdiag /system/bin/drmdiagapp
-    class late_start
-     user root
-     disabled
-     oneshot
-
-on property:drmdiag.load=1
-    start drmdiag
-
-on property:drmdiag.load=0
-    stop drmdiag
-
 service qcom-post-fs /system/bin/sh /system/etc/init.qcom.post_fs.sh
     class core
     user root
@@ -595,21 +583,8 @@ service qcom-post-boot /system/bin/sh /system/etc/init.qcom.post_boot.sh
     disabled
     oneshot
 
-on property:init.svc.bootanim=running
-	start atd
 on property:sys.boot_completed=1
     start qcom-post-boot
-
-service hdmid /system/bin/hdmid
-    class late_start
-    socket hdmid stream 0660 root system graphics
-    disabled
-
-service ppd /system/bin/mm-pp-daemon
-    class late_start
-    user system
-    socket pps stream 0660 system system graphics
-    group system graphics
 
 service hostapd /system/bin/hostapd -dddd /data/hostapd/hostapd.conf
     class late_start
@@ -618,36 +593,9 @@ service hostapd /system/bin/hostapd -dddd /data/hostapd/hostapd.conf
     oneshot
     disabled
 
-on property:persist.data.ds_fmc_app.mode=1
-    start ds_fmc_appd
-
-service ims_regmanager /system/bin/exe-ims-regmanagerprocessnative
-    class late_start
-    user system
-    group qcom_oncrpc net_bt_admin inet radio wifi
-    disabled
-
-on property:persist.ims.regmanager.mode=1
-    start ims_regmanager
-
 on property:ro.data.large_tcp_window_size=true
     # Adjust socket buffer to enlarge TCP receive window for high bandwidth (e.g. DO-RevB)
     write /proc/sys/net/ipv4/tcp_adv_win_scale  1
-
-service time_daemon /system/bin/time_daemon
-    class late_start
-    user root
-    group root
-    oneshot
-    disabled
-
-on property:persist.timed.enable=true
-    start time_daemon
-
-service battery_monitor /system/bin/battery_monitor
-    user system
-    group system
-    disabled
 
 #+s LGBT_COMMON_FUNCTION_BRINGUP - jeonghoon.lim@lge.com, 2011-12-10
 service bluetoothd /system/bin/logwrapper /system/bin/bluetoothd -n -d
@@ -723,33 +671,7 @@ service ril-daemon1 /system/bin/rild -c 1
     disabled
     group radio cache inet misc audio sdcard_rw qcom_oncrpc diag qcom_diag log
 
-service profiler_daemon /system/bin/profiler_daemon
-    class late_start
-    user root
-    group root
-    disabled
-
-service sdcard /system/bin/sdcard /data/media 1023 1023
-    class late_start
-    disabled
-
-on property:ro.fuse_sdcard=true
-    start sdcard
-
-# This will make sure that sdcard service starts as late_start.
-on nonencrypted
-    setprop ro.fuse_sdcard ${persist.fuse_sdcard}
-
-on property:vold.decrypt=trigger_restart_framework
-    setprop ro.fuse_sdcard ${persist.fuse_sdcard}
-
-service hcidump /system/bin/sh /system/etc/hcidump.sh
-    user bluetooth
-    group bluetooth system net_bt_admin net_admin
-    disabled
-    oneshot
-
-service charger /sbin/chargerlogo
+service charger /charger
     class charger
 
 on charger
@@ -759,12 +681,6 @@ on charger
     write /sys/module/pm2/modes/cpu1/standalone_power_collapse/suspend_enabled 1
     write /sys/module/pm2/modes/cpu0/power_collapse/suspend_enabled 1
     write /sys/module/pm2/modes/cpu0/power_collapse/idle_enabled 1
-
-# Restart adbd so it can run as root
-on property:service.adb.root=1
-    write /sys/class/android_usb/android0/enable 0
-    restart adbd
-    write /sys/class/android_usb/android0/enable 1
 
 # [LGE_CHANGE_S][narasimha.chikka@lge.com],usb diag interface	
     chmod 0660 /dev/smd11  
@@ -780,32 +696,63 @@ service bluetoothd /system/bin/logwrapper /system/bin/bluetoothd -n -d
     # let bluetoothd drop uid to bluetooth with the right linux capabilities
     group bluetooth net_bt_admin misc
     disabled         
-       
-## 2012.09.28, jaeshick: WIFI ftm_ptt deamon - START
-# LGE_CHANGE_S, 20110725, real-wifi@lge.com by Beaver, To enable ftm for WLAN
-# CONFIG_LGE_WLAN_PATCH
-#
-# CONFIG_LGE_WLAN_QCOM_PATCH
-service ftm_ptt /system/bin/ftm_ptt -d
-    class late_start
-    user root
-    group radio system
-    disabled
-    oneshot
 
-on property:hw.ftm_ptt_start=1
-    start ftm_ptt
+#LGE_CHANGE_S[jyothishre.nk@lge.com]20121005:Adding logger support
+service logcat-main /system/bin/logcat -v time -b main -f /data/logger/main.log -n 4 -r 4096
+   class late_start
+   oneshot
 
-on property:hw.ftm_ptt_start=0
-    stop ftm_ptt
-## 2012.09.28, jaeshick: WIFI ftm_ptt deamon - END
+on property:persist.service.main.enable=1
+   start logcat-main
 
-# LGE_CHANGE_S, khyun.kim@lge.com, FRST Flag Setting
-on property:sys.lgsetupwizard.status=1
-    write /sys/module/lge_emmc_direct_access/parameters/frst_flag 4-5
-on property:sys.lgsetupwizard.status=2
-    write /sys/module/lge_emmc_direct_access/parameters/frst_flag 5-6
-# LGE_CHANGE_E, khyun.kim@lge.com, FRST Flag Setting
+on property:persist.service.main.enable=0
+   stop logcat-main
+
+service logcat-system /system/bin/logcat -v time -b system -f /data/logger/system.log -n 4 -r 4096
+   class late_start
+   disabled
+   oneshot
+
+on property:persist.service.system.enable=1
+    start logcat-system
+
+on property:persist.service.system.enable=0
+    stop logcat-system
+
+
+service logcat-radio /system/bin/logcat -v time -b radio -f /data/logger/radio.log -n 4 -r 4096
+   class late_start
+   disabled
+   oneshot
+
+on property:persist.service.radio.enable=1
+    start logcat-radio
+
+on property:persist.service.radio.enable=0
+    stop logcat-radio
+
+service logcat-events /system/bin/logcat -v time -b events -f /data/logger/events.log -n 4 -r 4096
+   class late_start
+   disabled
+   oneshot
+
+on property:persist.service.events.enable=1
+    start logcat-events
+
+on property:persist.service.events.enable=0
+    stop logcat-events
+
+service log-kernel /system/bin/logcat_kmsg /data/logger/kernel.log 4096 4
+   class late_start
+   disabled
+   oneshot
+
+on property:persist.service.kernel.enable=1
+    start log-kernel
+
+on property:persist.service.kernel.enable=0
+    stop log-kernel
+#LGE_CHANGE_E[jyothishre.nk@lge.com]20121005:Adding logger support
 
 #LGE_CHANGE_S 2012-11-28 khyun.kim@lge.com sw_version's value set to property via rapi.
 on property:sys.boot_completed=1

@@ -26,25 +26,13 @@
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 #
-on early-boot
-    start comp-set
 
-on emmc-fs
-    mount_all /fstab.vee7
+on fs
+    mount_all /fstab.Nvee7
 
     # Keeping following partitions outside fstab file. As user may not have
     # these partition flashed on the device. Failure to mount any partition in fstab file
     # results in failure to launch late-start class.
-
-#    wait /dev/block/platform/msm_sdcc.3/by-num/p15
-#    mount ext4 /dev/block/platform/msm_sdcc.3/by-num/p15 /cache nosuid nodev barrier=1
-    
-    wait /dev/block/platform/msm_sdcc.3/by-num/p16
-    exec /system/bin/e2fsck -fy /dev/block/platform/msm_sdcc.3/by-num/p16
-    mount ext4 /dev/block/platform/msm_sdcc.3/by-num/p16 /cache nosuid nodev barrier=1
-
-#    wait /dev/block/platform/msm_sdcc.3/by-num/p14
-#    mount ext4 /dev/block/platform/msm_sdcc.3/by-num/p14 /persist nosuid nodev barrier=1
     
     wait /dev/block/platform/msm_sdcc.3/by-num/p15
     exec /system/bin/e2fsck -fy /dev/block/platform/msm_sdcc.3/by-num/p15
@@ -53,11 +41,10 @@ on emmc-fs
     wait /dev/block/platform/msm_sdcc.3/by-num/p18
     exec /system/bin/e2fsck -fy /dev/block/platform/msm_sdcc.3/by-num/p18
     mount ext4 /dev/block/platform/msm_sdcc.3/by-num/p18 /persist-lg nosuid nodev barrier=1
-#LGE_CHANGE_S [satya.kamasali@lge.com] 20121008:MPT Partition
-        wait /dev/block/platform/msm_sdcc.3/by-num/p23
+
+    wait /dev/block/platform/msm_sdcc.3/by-num/p23
     exec /system/bin/e2fsck -fy /dev/block/platform/msm_sdcc.3/by-num/p23
     mount ext4 /dev/block/platform/msm_sdcc.3/by-num/p23 /mpt nosuid nodev barrier=1
-#LGE_CHANGE_E [satya.kamasali@lge.com] 20121008
 
 	wait /dev/block/platform/msm_sdcc.3/by-num/p25
 	exec /system/bin/e2fsck -fy /dev/block/platform/msm_sdcc.3/by-num/p25
@@ -69,25 +56,13 @@ on boot
    chown system system /sys/devices/virtual/input/lge_touch/incoming_call
 	chown system system /sys/devices/virtual/input/lge_touch/ts_first_enable 
     chown system system /sys/devices/platform/msm_fb.525057/mdp_kcal
+    
 on post-fs
     exec /system/bin/sh /system/etc/init.qcom.thermald_conf.sh
 
 service ril-qmi /system/bin/sh /init.qcom.ril.path.sh
     class main
     user root
-    oneshot
-
-service comp-set /system/bin/sh /system/etc/init.qcom.composition_type.sh
-    class late_start
-    user root
-    critical
-    disabled
-    oneshot
-
-service wlan_tool /system/bin/wlan_tool
-    class late_start
-    user root
-    group wifi system net_admin inet shell
     oneshot
 
 #start camera server as daemon
@@ -100,12 +75,10 @@ service thermald /system/bin/thermald
    class late_start
    user root
    group root
-   disabled
 
 service mpdecision /system/bin/mpdecision --no_sleep --avg_comp
-        class late_start
+    class late_start
 	user root
-	disabled
 
 on property:sys.radio.shutdown=true
    exec /system/bin/sh /system/etc/init.qcom.efs.sync.sh
@@ -116,12 +89,3 @@ service gpu_dcvsd /system/bin/gpu_dcvsd
     class late_start
     user root
     oneshot
-
-# Generate Coredump file to debug a process crash.
-# [blue.park@lge.com] <For Blue Error Handler V1.3>
-on property:ro.build.type=eng
-	setrlimit 4 -1 -1
-	write /proc/sys/kernel/core_uses_pid 1
-	write /proc/sys/kernel/core_pattern "|/system/bin/blue_error_report -o %e.%p"
-	write /proc/sys/fs/suid_dumpable 1
-	write /proc/sys/kernel/dmesg_restrict 0

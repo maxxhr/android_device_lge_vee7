@@ -1,0 +1,7 @@
+
+/dev/block/platform/msm_sdcc.3/by-num/p14         	/system      			ext4    ro,barrier=1,noatime                                				wait
+/dev/block/platform/msm_sdcc.3/by-num/p16         	/cache       			ext4    nosuid,nodev,barrier=1                      						wait,check
+/dev/block/platform/msm_sdcc.3/by-num/p20         	/data        			ext4    nosuid,nodev,noatime,barrier=1,noauto_da_alloc,errors=continue      wait,check,encryptable=/dev/block/platform/msm_sdcc.3/by-num/p24
+
+/devices/platform/msm_sdcc.1/mmc_host     			/storage/sdcard1 		vfat 	defaults 															voldmanaged=sdcard:auto
+/devices/platform/msm_sdcc.3/mmc_host      			/storage/sdcard0 		vfat 	defaults 															voldmanaged=emmc:20,nonremovable
