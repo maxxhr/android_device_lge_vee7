@@ -28,10 +28,6 @@ dev.pm.dyn_samplingrate=1
 dev.pm.dyn_sample_period=700000
 persist.thermal.monitor=true
 
-# Emulated sdcard
-ro.emmc.sdcard.partition=20
-persist.fuse_sdcard=true
-
 # WiFi
 wifi.interface=wlan0
 wifi.supplicant_scan_interval=5
@@ -62,6 +58,5 @@ dalvik.vm.heapgrowthlimit=48m
 dalvik.vm.heapsize=128m
 dalvik.vm.lockprof.threshold=500
 dalvik.vm.execution-mode=int:jit
-dalvik.vm.dexopt-data-only=1 
 
 
