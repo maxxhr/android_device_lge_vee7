@@ -384,13 +384,6 @@ on post-fs-data
     chown system system /data/logger
     chmod 0771 /data/logger
     # Log Service [END]
-    
-# Export GPIO56 for fusion targets to enable/disable hub
-service usbhub_init /system/bin/usbhub_init
-   class late_start
-   user root
-   disabled
-   oneshot
 
 #[LGSI_SP4_BSP_BEGIN][kirankumar.vm@lge.com] 2012-09-06, SENSOR_DAEMON
 
@@ -405,11 +398,6 @@ service sensord /system/bin/sensord
 on property:init.svc.surfaceflinger=stopped
     stop ppd
     stop hdmid
-
-service qcom-c_main-sh /system/bin/sh /init.qcom.class_main.sh
-    class main
-    user root
-    oneshot
 
 on property:vold.decrypt=trigger_restart_framework
     start qcom-c_main-sh
@@ -572,10 +560,6 @@ service qcom-post-fs /system/bin/sh /system/etc/init.qcom.post_fs.sh
     disabled
     oneshot
 
-service qcom-sh /system/bin/sh /init.qcom.sh
-    class late_start
-    user root
-    oneshot
 
 service qcom-post-boot /system/bin/sh /system/etc/init.qcom.post_boot.sh
     class late_start
@@ -673,6 +657,16 @@ service ril-daemon1 /system/bin/rild -c 1
 
 service charger /charger
     class charger
+    
+on property:init.svc.charger=running
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 1004
+    write /sys/class/android_usb/android0/idProduct 6300
+    write /sys/class/android_usb/android0/bDeviceClass 0
+    write /sys/class/android_usb/android0/bDeviceSubClass 0
+    write /sys/class/android_usb/android0/bDeviceProtocol 0
+    write /sys/class/android_usb/android0/functions charge_only
+    write /sys/class/android_usb/android0/enable 1   
 
 on charger
     write /sys/module/pm2/modes/cpu0/standalone_power_collapse/idle_enabled 1
