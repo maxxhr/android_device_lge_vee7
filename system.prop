@@ -7,42 +7,27 @@ ro.telephony.ril_class=LGEQualcommUiccRIL
 ro.telephony.default_network=0
 telephony.lteOnGsmDevice=0
 ro.telephony.ril.v3=qcomdsds,skippinpukcount
-ro.use_data_netmgrd=true
-persist.data_netmgrd_nint=16 
 persist.radio.apm_sim_not_pwdn=1  
 gsm.version.baseband=Neutrondev03
 
-# The MM modules
-media.stagefright.enable-aac=true
-media.stagefright.enable-fma2dp=true
-media.stagefright.enable-http=true
-media.stagefright.enable-meta=true
-media.stagefright.enable-player=true
-media.stagefright.enable-qcp=true
-media.stagefright.enable-scan=true
-
 # QCom
-qcom.hw.aac.encoder=true
+com.qc.hardware=1
 ro.vendor.extension_library=/system/lib/libqc-opt.so
 dev.pm.dyn_samplingrate=1
 dev.pm.dyn_sample_period=700000
-persist.thermal.monitor=true
 
 # WiFi
 wifi.interface=wlan0
-wifi.supplicant_scan_interval=5
+wifi.supplicant_scan_interval=60
 
 # Display Things
-debug.sf.hw=1
 debug.hwc.dynThreshold=1.9
 debug.composition.type=dyn
 ro.max.fling_velocity=4000
-com.qc.hardware=1
-hwui.render_dirty_regions=false
 ro.opengles.version=131072 
 debug.gr.numframebuffers=3
-debug.gralloc.map_fb_memory=true
 ro.bq.gpu_to_cpu_unsupported=1 
+hwui.render_dirty_regions=true
 
 # Adb
 persist.sys.usb.config=mtp,adb 
